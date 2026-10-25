@@ -9,6 +9,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: PlateHunterAndroid_work
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +30,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+          build-root-directory: PlateHunterAndroid_work
 
       - name: Build debug APK
         run: gradle --no-daemon --stacktrace assembleDebug
@@ -34,5 +38,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: PlateHunter-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: PlateHunterAndroid_work/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
