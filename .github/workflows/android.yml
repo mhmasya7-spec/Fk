@@ -9,11 +9,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: PlateHunterAndroid_work
     steps:
       - uses: actions/checkout@v4
+
+      - name: Unzip and find Gradle project
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/_src"
+          find . -name '*.zip' -not -path './.git/*' -not -path './_src/*' | while read -r z; do
+            echo "Unzipping $z"
+            unzip -oq "$z" -d "$GITHUB_WORKSPACE/_src" -x '__MACOSX/*'
+          done
+          F=$(find "$GITHUB_WORKSPACE" -name settings.gradle.kts -not -path '*/.git/*' | head -1)
+          if [ -z "$F" ]; then
+            echo "settings.gradle.kts not found. Repo contents:"
+            find "$GITHUB_WORKSPACE" -not -path '*/.git/*' | head -50
+            exit 1
+          fi
+          echo "PROJECT_DIR=$(dirname "$F")" >> "$GITHUB_ENV"
+          echo "Project found at $(dirname "$F")"
 
       - uses: actions/setup-java@v4
         with:
@@ -30,13 +43,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-          build-root-directory: PlateHunterAndroid_work
 
       - name: Build debug APK
+        working-directory: ${{ env.PROJECT_DIR }}
         run: gradle --no-daemon --stacktrace assembleDebug
 
       - uses: actions/upload-artifact@v4
         with:
           name: PlateHunter-debug-apk
-          path: PlateHunterAndroid_work/app/build/outputs/apk/debug/app-debug.apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
